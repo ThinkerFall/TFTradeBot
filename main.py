@@ -149,7 +149,7 @@ def generate_signals(df):
     return trade, sell_flags, latest, buy_flags
 
 #=== MAIN EXECUTION ===
-if name == " main ":
+if __name__ == "__main__":
     df = fetch_coingecko_data(symbol=SYMBOL, vs_currency=VS_CURRENCY, interval_minutes=INTERVAL_MINUTES, limit=LIMIT)
     if not df.empty:
         df = add_indicators(df)
