@@ -12,8 +12,8 @@ LIMIT = 168
 
 # === TELEGRAM ALERTS ===
 def send_telegram_alert(message):
-    bot_token = "YOUR_BOT_TOKEN"
-    chat_id = "YOUR_CHAT_ID"
+    bot_token = "8131661650:AAEOdal3Y1pNCQXWTdjQmn624402adQXof4"
+    chat_id = "7674848022"
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     payload = {
         "chat_id": chat_id,
@@ -33,7 +33,7 @@ def fetch_coingecko_data(symbol="bitcoin", vs_currency="usd", interval_minutes=1
     params = {
         "vs_currency": vs_currency,
         "days": "7",
-        "interval": "minutely"
+        "interval": "hourly"
 }
 
     try:
