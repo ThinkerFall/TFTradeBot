@@ -5,14 +5,15 @@ from datetime import datetime
 import ta
 
 # === CONFIGURATION ===
-SYMBOL = "BTCUSDT"
-INTERVAL = "15m"
+SYMBOL = "bitcoin"  # CoinGecko ID (e.g., "bitcoin", "ethereum")
+VS_CURRENCY = "usd"
+INTERVAL_MINUTES = 15
 LIMIT = 168
 
 # === TELEGRAM ALERTS ===
 def send_telegram_alert(message):
-    bot_token = "8131661650:AAEOdal3Y1pNCQXWTdjQmn624402adQXof4"  # Replace with your bot token
-    chat_id = "7674848022"      # Replace with your chat ID
+    bot_token = "YOUR_BOT_TOKEN"
+    chat_id = "YOUR_CHAT_ID"
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     payload = {
         "chat_id": chat_id,
@@ -26,28 +27,38 @@ def send_telegram_alert(message):
     except Exception as e:
         print("❌ Telegram error:", e)
 
-# === FETCH PRICE DATA FROM BINANCE ===
-def fetch_binance_data():
-    url = "https://twelvedata.com/"
-    params = {"symbol": SYMBOL, "interval": INTERVAL, "limit": LIMIT}
+# === FETCH PRICE DATA FROM COINGECKO ===
+def fetch_coingecko_data(symbol="bitcoin", vs_currency="usd", interval_minutes=15, limit=168):
+    url = f"https://api.coingecko.com/api/v3/coins/{symbol}/market_chart"
+    params = {
+        "vs_currency": vs_currency,
+        "days": "7",
+        "interval": "minutely"
+}
+
     try:
         response = requests.get(url, params=params)
         response.raise_for_status()
-        raw_data = response.json()
+        data = response.json()
     except Exception as e:
-        print("❌ Error fetching Binance data:", e)
+        print("❌ Error fetching CoinGecko data:", e)
         return pd.DataFrame()
 
-    df = pd.DataFrame(raw_data, columns=[
-        "open_time", "open", "high", "low", "close", "volume",
-        "close_time", "quote_asset_volume", "num_trades",
-        "taker_buy_base", "taker_buy_quote", "ignore"
-    ])
-    df["timestamp"] = pd.to_datetime(df["open_time"], unit="ms")
+    prices = data.get("prices", [])
+    if not prices:
+        print("⚠️ No price data returned.")
+        return pd.DataFrame()
+
+    df = pd.DataFrame(prices, columns=["timestamp", "close"])
+    df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
     df["close"] = df["close"].astype(float)
-    df["high"] = df["high"].astype(float)
-    df["low"] = df["low"].astype(float)
-    return df[["timestamp", "close", "high", "low"]]
+
+    df.set_index("timestamp", inplace=True)
+    df = df.resample(f"{interval_minutes}min").agg({"close": "last"}).dropna().reset_index()
+    df["high"] = df["close"].rolling(3, min_periods=1).max()
+    df["low"] = df["close"].rolling(3, min_periods=1).min()
+
+    return df.tail(limit)
 
 # === CALCULATE INDICATORS ===
 def add_indicators(df):
@@ -138,10 +149,8 @@ def generate_signals(df):
     return trade, sell_flags, latest, buy_flags
 
 #=== MAIN EXECUTION ===
-
-
-if __name__ == "__main__":
-    df = fetch_binance_data()
+if name == " main ":
+    df = fetch_coingecko_data(symbol=SYMBOL, vs_currency=VS_CURRENCY, interval_minutes=INTERVAL_MINUTES, limit=LIMIT)
     if not df.empty:
         df = add_indicators(df)
         trade, sell_flags, latest, buy_flags = generate_signals(df)
@@ -149,7 +158,7 @@ if __name__ == "__main__":
         if latest is not None:
             if trade:
                 alert_msg = f"""
-📈 BUY Signal for {SYMBOL}
+📈 BUY Signal for {SYMBOL.upper()}
 Entry: ${trade['entry']}
 Stop Loss: ${trade['stop_loss']}
 Take Profit 1: ${trade['take_profit_1']}
@@ -157,50 +166,41 @@ Take Profit 2: ${trade['take_profit_2']}
 """
                 send_telegram_alert(alert_msg)
 
-        if len(sell_flags)>= 2:
-            sell_msg = f"""
-🚨 SELL ALERT for {SYMBOL}!
+            if len(sell_flags)>= 2:
+                sell_msg = f"""
+🚨 SELL ALERT for {SYMBOL.upper()}!
 Triggered by: {', '.join(sell_flags)}
 Price: ${latest['close']:.2f}
 """
-            send_telegram_alert(sell_msg)
+                send_telegram_alert(sell_msg)
 
-        print(f"\n[{latest['timestamp']}] Coin: {SYMBOL} Price: ${latest['close']:.5f}")
-        print(f"RSI: {latest['rsi']:.2f} | MACD: {latest['macd']:.4f} | ADX: {latest['adx']:.2f}")
-        print(f"Stoch RSI: K={latest['stoch_rsi_k']:.2f}, D={latest['stoch_rsi_d']:.2f}")
-        print(f"EMA 12: {latest['ema_12']:.5f} | EMA 26: {latest['ema_26']:.5f}")
-        print("Signals:", ", ".join(buy_flags + sell_flags if buy_flags or sell_flags else ["No strong signals"]))# Your Telegram alert logic here
-else:
-    print("⚠️ Skipping run: No data returned from Binance.")
+            # === MARKET SENTIMENT ===
+            if latest["ema_12"]> latest["ema_26"] and latest["macd"]> 0:
+                trend_direction = "📈 Bullish"
+            elif latest["ema_12"] < latest["ema_26"] and latest["macd"] < 0:
+                trend_direction = "📉 Bearish"
+            else:
+                trend_direction = "🔄 Sideways / Unclear"
 
-        
+            trend_strength = "💪 Strong Trend" if latest["adx"]> 25 else "😴 Weak Trend"
 
-# === MARKET SENTIMENT ===
-if latest["ema_12"]> latest["ema_26"] and latest["macd"]> 0:
-    trend_direction = "📈 *Bullish*"
-elif latest["ema_12"] < latest["ema_26"] and latest["macd"] < 0:
-    trend_direction = "📉 *Bearish*"
-else:
-    trend_direction = "🔄 *Sideways / Unclear*"
+            # === SUMMARY ALERT ===
+            summary_msg = f"""
+🧾 Signal Summary for {SYMBOL.upper()}
+Time: {latest['timestamp']}
+Price: ${latest['close']:.5f}
 
-trend_strength = "💪 *Strong Trend*" if latest["adx"]> 25 else "😴 *Weak Trend*"
+RSI: {latest['rsi']:.2f}
+MACD: {latest['macd']:.4f}
+ADX: {latest['adx']:.2f}
+Stoch RSI: K={latest['stoch_rsi_k']:.2f}, D={latest['stoch_rsi_d']:.2f}
+EMA 12: {latest['ema_12']:.5f}
+EMA 26: {latest['ema_26']:.5f}
 
-
-# === SEND CONSOLE OUTPUT TO TELEGRAM ===
-summary_msg = f"""
-🧾 *Signal Summary for {SYMBOL}*
-Time: `{latest['timestamp']}`
-Price: `${latest['close']:.5f}`
-
-*RSI:* {latest['rsi']:.2f}
-*MACD:* {latest['macd']:.4f}
-*ADX:* {latest['adx']:.2f}
-*Stoch RSI:* K={latest['stoch_rsi_k']:.2f}, D={latest['stoch_rsi_d']:.2f}
-*EMA 12:* {latest['ema_12']:.5f}
-*EMA 26:* {latest['ema_26']:.5f}
-
-*Market Direction:* {trend_direction}
-*Trend Strength:* {trend_strength}
-*Signals:* {', '.join(buy_flags + sell_flags if buy_flags or sell_flags else ['No strong signals'])}
+Market Direction: {trend_direction}
+Trend Strength: {trend_strength}
+Signals: {', '.join(buy_flags + sell_flags if buy_flags or sell_flags else ['No strong signals'])}
 """
-send_telegram_alert(summary_msg)
+            send_telegram_alert(summary_msg)
+    else:
+        print("⚠️ Skipping run: No data returned from CoinGecko.")
