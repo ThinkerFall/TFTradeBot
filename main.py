@@ -170,9 +170,8 @@ Price: ${latest['close']:.2f}
         print(f"Stoch RSI: K={latest['stoch_rsi_k']:.2f}, D={latest['stoch_rsi_d']:.2f}")
         print(f"EMA 12: {latest['ema_12']:.5f} | EMA 26: {latest['ema_26']:.5f}")
         print("Signals:", ", ".join(buy_flags + sell_flags if buy_flags or sell_flags else ["No strong signals"]))# Your Telegram alert logic here
-...
-    else:
-        print("⚠️ Skipping run: No data returned from Binance.")
+else:
+    print("⚠️ Skipping run: No data returned from Binance.")
 
         
 
