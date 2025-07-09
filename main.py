@@ -5,7 +5,7 @@ from datetime import datetime
 import ta
 
 headers = {
-    "User-Agent": "Mozilla/5.0 (compatible; CryptoBot/1.0; +https://github.com/yourusername)"
+    "User-Agent": "Mozilla/5.0 (compatible; CryptoBot/1.0; +https://github.com/ThinkerFall)"
 }
 
 response = requests.get(url, params=params, headers=headers)
@@ -42,7 +42,7 @@ def fetch_coingecko_data(symbol="bitcoin", vs_currency="usd", limit=168):
         "interval": "hourly"
 }
     headers = {
-        "User-Agent": "Mozilla/5.0 (compatible; CryptoBot/1.0; +https://github.com/yourusername)"
+        "User-Agent": "Mozilla/5.0 (compatible; CryptoBot/1.0; +https://github.com/ThinkerFall)"
 }
 
     try:
