@@ -28,7 +28,7 @@ def send_telegram_alert(message):
 
 # === FETCH PRICE DATA FROM BINANCE ===
 def fetch_binance_data():
-    url = "https://api.binance.com/api/v3/klines"
+    url = "https://www.coingecko.com/en/api"
     params = {"symbol": SYMBOL, "interval": INTERVAL, "limit": LIMIT}
     try:
         response = requests.get(url, params=params)
