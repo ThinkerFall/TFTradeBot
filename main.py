@@ -148,14 +148,14 @@ if __name__ == "__main__":
 
         if latest is not None:
             if trade:
-            alert_msg = f"""
+                alert_msg = f"""
 📈 BUY Signal for {SYMBOL}
 Entry: ${trade['entry']}
 Stop Loss: ${trade['stop_loss']}
 Take Profit 1: ${trade['take_profit_1']}
 Take Profit 2: ${trade['take_profit_2']}
 """
-            send_telegram_alert(alert_msg)
+                send_telegram_alert(alert_msg)
 
         if len(sell_flags)>= 2:
             sell_msg = f"""
