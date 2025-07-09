@@ -35,6 +35,12 @@ def send_telegram_alert(message):
 
 # === FETCH PRICE DATA FROM COINGECKO ===
 def fetch_coingecko_data(symbol="bitcoin", vs_currency="usd", limit=168):
+    """
+    Fetch hourly historical price data from CoinGecko.
+    """
+    import requests
+    import pandas as pd
+
     url = f"https://api.coingecko.com/api/v3/coins/{symbol}/market_chart"
     params = {
         "vs_currency": vs_currency,
@@ -42,7 +48,7 @@ def fetch_coingecko_data(symbol="bitcoin", vs_currency="usd", limit=168):
         "interval": "hourly"
 }
     headers = {
-        "User-Agent": "Mozilla/5.0 (compatible; CryptoBot/1.0; +https://github.com/ThinkerFall)"
+        "User-Agent": "Mozilla/5.0 (compatible; CryptoBot/1.0; +https://github.com/yourusername)"
 }
 
     try:
@@ -61,6 +67,8 @@ def fetch_coingecko_data(symbol="bitcoin", vs_currency="usd", limit=168):
     df = pd.DataFrame(prices, columns=["timestamp", "close"])
     df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
     df["close"] = df["close"].astype(float)
+
+    # Simulate high/low using rolling window
     df["high"] = df["close"].rolling(3, min_periods=1).max()
     df["low"] = df["close"].rolling(3, min_periods=1).min()
 
