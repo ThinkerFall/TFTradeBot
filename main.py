@@ -4,6 +4,12 @@ import pandas as pd
 from datetime import datetime
 import ta
 
+headers = {
+    "User-Agent": "Mozilla/5.0 (compatible; CryptoBot/1.0; +https://github.com/yourusername)"
+}
+
+response = requests.get(url, params=params, headers=headers)
+
 # === CONFIGURATION ===
 SYMBOL = "bitcoin"  # CoinGecko ID (e.g., "bitcoin", "ethereum")
 VS_CURRENCY = "usd"
@@ -28,16 +34,19 @@ def send_telegram_alert(message):
         print("❌ Telegram error:", e)
 
 # === FETCH PRICE DATA FROM COINGECKO ===
-def fetch_coingecko_data(symbol="bitcoin", vs_currency="usd", interval_minutes=60, limit=168):
+def fetch_coingecko_data(symbol="bitcoin", vs_currency="usd", limit=168):
     url = f"https://api.coingecko.com/api/v3/coins/{symbol}/market_chart"
     params = {
         "vs_currency": vs_currency,
         "days": "7",
         "interval": "hourly"
 }
+    headers = {
+        "User-Agent": "Mozilla/5.0 (compatible; CryptoBot/1.0; +https://github.com/yourusername)"
+}
 
     try:
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, headers=headers)
         response.raise_for_status()
         data = response.json()
     except Exception as e:
@@ -52,9 +61,6 @@ def fetch_coingecko_data(symbol="bitcoin", vs_currency="usd", interval_minutes=6
     df = pd.DataFrame(prices, columns=["timestamp", "close"])
     df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
     df["close"] = df["close"].astype(float)
-
-    df.set_index("timestamp", inplace=True)
-    df = df.resample(f"{interval_minutes}min").agg({"close": "last"}).dropna().reset_index()
     df["high"] = df["close"].rolling(3, min_periods=1).max()
     df["low"] = df["close"].rolling(3, min_periods=1).min()
 
