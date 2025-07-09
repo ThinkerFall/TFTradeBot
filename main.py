@@ -138,13 +138,16 @@ def generate_signals(df):
     return trade, sell_flags, latest, buy_flags
 
 #=== MAIN EXECUTION ===
+
+
 if __name__ == "__main__":
     df = fetch_binance_data()
     if not df.empty:
         df = add_indicators(df)
         trade, sell_flags, latest, buy_flags = generate_signals(df)
 
-        if trade:
+        if latest is not None:
+            if trade:
             alert_msg = f"""
 📈 BUY Signal for {SYMBOL}
 Entry: ${trade['entry']}
@@ -166,7 +169,12 @@ Price: ${latest['close']:.2f}
         print(f"RSI: {latest['rsi']:.2f} | MACD: {latest['macd']:.4f} | ADX: {latest['adx']:.2f}")
         print(f"Stoch RSI: K={latest['stoch_rsi_k']:.2f}, D={latest['stoch_rsi_d']:.2f}")
         print(f"EMA 12: {latest['ema_12']:.5f} | EMA 26: {latest['ema_26']:.5f}")
-        print("Signals:", ", ".join(buy_flags + sell_flags if buy_flags or sell_flags else ["No strong signals"]))
+        print("Signals:", ", ".join(buy_flags + sell_flags if buy_flags or sell_flags else ["No strong signals"]))# Your Telegram alert logic here
+...
+    else:
+        print("⚠️ Skipping run: No data returned from Binance.")
+
+        
 
 # === MARKET SENTIMENT ===
 if latest["ema_12"]> latest["ema_26"] and latest["macd"]> 0:
