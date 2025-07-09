@@ -28,7 +28,7 @@ def send_telegram_alert(message):
         print("❌ Telegram error:", e)
 
 # === FETCH PRICE DATA FROM COINGECKO ===
-def fetch_coingecko_data(symbol="bitcoin", vs_currency="usd", interval_minutes=15, limit=168):
+def fetch_coingecko_data(symbol="bitcoin", vs_currency="usd", interval_minutes=60, limit=168):
     url = f"https://api.coingecko.com/api/v3/coins/{symbol}/market_chart"
     params = {
         "vs_currency": vs_currency,
